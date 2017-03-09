@@ -8,6 +8,7 @@ import android.view.View;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -17,9 +18,10 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 经测试 现在新版本的微信基本都已经不能通过scheme跳到对应的界面了
      */
-    private String toWixin = "weixin://";
+    private String toWixin = "alipay://";
     private String localUrl = "file:///android_asset/index.html";
     private String successUrl = "file:///android_asset/success.html";
+    private String failUrl = "file:///android_asset/fail.html";
     private String localMainUrl = "file:///android_asset/main.html";
     private String localLoginUrl = "file:///android_asset/login.html";
 
@@ -90,18 +92,32 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public WebResourceResponse shouldInterceptRequest(final WebView view, String url) {
+            public WebResourceResponse shouldInterceptRequest(final WebView view, final String url) {
                 if (url.startsWith("http") || url.startsWith("https")) { //http和https协议开头的执行正常的流程
                     return super.shouldInterceptRequest(view, url);
                 } else {  //其他的URL则会开启一个Acitity然后去调用原生APP
                     Intent in = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    startActivity(in);
-                    view.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            view.loadUrl(successUrl);
-                        }
-                    });
+                    if(in.resolveActivity(getPackageManager()) == null) {
+                        //说明系统中不存在这个activity
+                        view.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainActivity.this,"应用未安装",Toast.LENGTH_SHORT).show();
+                                view.loadUrl(failUrl);
+                            }
+                        });
+
+                    }else {
+                        in.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                        startActivity(in);
+                        view.post(new Runnable() {
+                            @Override
+                            public void run() {
+                            view.loadUrl(localUrl);
+                            }
+                        });
+                    }
+
                     return null;
                 }
             }
