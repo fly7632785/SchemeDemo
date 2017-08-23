@@ -5,7 +5,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
@@ -86,44 +85,36 @@ public class MainActivity extends AppCompatActivity {
 
         WebViewClient webViewClient = new WebViewClient() {
             @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                view.loadUrl(url);
-                return true;
-            }
-
-            @Override
-            public WebResourceResponse shouldInterceptRequest(final WebView view, final String url) {
+            public boolean shouldOverrideUrlLoading(final WebView view, String url) {
                 if (url.startsWith("http") || url.startsWith("https")) { //http和https协议开头的执行正常的流程
-                    return super.shouldInterceptRequest(view, url);
+                    return false;
                 } else {  //其他的URL则会开启一个Acitity然后去调用原生APP
                     Intent in = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    if(in.resolveActivity(getPackageManager()) == null) {
+                    if (in.resolveActivity(getPackageManager()) == null) {
                         //说明系统中不存在这个activity
                         view.post(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(MainActivity.this,"应用未安装",Toast.LENGTH_SHORT).show();
+                                Toast.makeText(MainActivity.this, "应用未安装", Toast.LENGTH_SHORT).show();
                                 view.loadUrl(failUrl);
                             }
                         });
 
-                    }else {
-                        in.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                    } else {
+                        in.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
                         startActivity(in);
+                        //如果想要加载成功跳转可以 这样
                         view.post(new Runnable() {
                             @Override
                             public void run() {
-                            view.loadUrl(localUrl);
+                                view.loadUrl(successUrl);
                             }
                         });
                     }
-
-                    return null;
+                    return true;
                 }
             }
-
         };
-
 
         webView = (WebView) findViewById(R.id.webview);
         webView.getSettings().setJavaScriptEnabled(true);
